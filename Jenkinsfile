@@ -6,6 +6,7 @@ agent any
 environment {
     DOCKER_IMAGE = "gkv9972/devops-html-app"
     DOCKER_TAG = "${BUILD_NUMBER}"
+    KUBECONFIG = "/var/lib/jenkins/.kube/config"
 }
 
 stages {
@@ -55,6 +56,8 @@ stages {
                     echo "$DOCKER_PASSWORD" | docker login \
                         -u "$DOCKER_USERNAME" \
                         --password-stdin
+
+                    echo "Docker Hub login successful."
                 '''
             }
         }
@@ -72,6 +75,18 @@ stages {
         }
     }
 
+    stage('Check Kubernetes Access') {
+        steps {
+            sh '''
+                echo "Checking Kubernetes access..."
+
+                kubectl get nodes
+
+                echo "Kubernetes access is working."
+            '''
+        }
+    }
+
     stage('Deploy to Kubernetes') {
         steps {
             sh '''
@@ -79,23 +94,46 @@ stages {
 
                 kubectl apply -f k3s/deployment.yaml
 
+                echo "Updating deployment image..."
+
                 kubectl set image deployment/devops-html-app \
                     devops-html-app=${DOCKER_IMAGE}:${DOCKER_TAG}
 
+                echo "Waiting for rollout..."
+
                 kubectl rollout status deployment/devops-html-app
 
-                echo "Kubernetes deployment completed."
+                echo "Kubernetes deployment completed successfully."
             '''
         }
     }
 
     stage('Verify') {
         steps {
-            echo "Checking Kubernetes resources..."
+            sh '''
+                echo "========================================"
+                echo "KUBERNETES DEPLOYMENT VERIFICATION"
+                echo "========================================"
 
-            sh 'kubectl get deployments'
-            sh 'kubectl get pods'
-            sh 'kubectl get services'
+                echo "Deployments:"
+                kubectl get deployments
+
+                echo ""
+                echo "Pods:"
+                kubectl get pods -o wide
+
+                echo ""
+                echo "Services:"
+                kubectl get services
+
+                echo ""
+                echo "Deployment details:"
+                kubectl describe deployment devops-html-app
+
+                echo "========================================"
+                echo "Verification completed."
+                echo "========================================"
+            '''
         }
     }
 }
@@ -105,14 +143,17 @@ post {
     success {
         echo "========================================"
         echo "PIPELINE COMPLETED SUCCESSFULLY"
+        echo "========================================"
         echo "Docker Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+        echo "Kubernetes Deployment: devops-html-app"
         echo "========================================"
     }
 
     failure {
         echo "========================================"
         echo "PIPELINE FAILED"
-        echo "Check the console output for details."
+        echo "========================================"
+        echo "Check the failed stage in the console output."
         echo "========================================"
     }
 
