@@ -23,7 +23,7 @@ stages {
 
                 test -f index.html
                 test -f Dockerfile
-                test -f deployment.yaml
+                test -f k3s/deployment.yaml
 
                 echo "All required files are present."
             '''
@@ -77,7 +77,7 @@ stages {
             sh '''
                 echo "Deploying application to Kubernetes..."
 
-                kubectl apply -f deployment.yaml
+                kubectl apply -f k3s/deployment.yaml
 
                 kubectl set image deployment/devops-html-app \
                     devops-html-app=${DOCKER_IMAGE}:${DOCKER_TAG}
@@ -120,6 +120,6 @@ post {
         sh 'docker logout || true'
     }
 }
-
+```
 
 }
