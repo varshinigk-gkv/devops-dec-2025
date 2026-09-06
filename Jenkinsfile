@@ -96,12 +96,12 @@ stages {
 
                 echo "Updating deployment image..."
 
-                kubectl set image deployment/devops-html-app \
-                    devops-html-app=${DOCKER_IMAGE}:${DOCKER_TAG}
+                kubectl set image deployment/html-app \
+                    html-app=${DOCKER_IMAGE}:${DOCKER_TAG}
 
-                echo "Waiting for rollout..."
+                echo "Waiting for deployment rollout..."
 
-                kubectl rollout status deployment/devops-html-app
+                kubectl rollout status deployment/html-app
 
                 echo "Kubernetes deployment completed successfully."
             '''
@@ -127,9 +127,11 @@ stages {
                 kubectl get services
 
                 echo ""
-                echo "Deployment details:"
-                kubectl describe deployment devops-html-app
+                echo "Deployment image:"
+                kubectl get deployment html-app \
+                    -o jsonpath='{.spec.template.spec.containers[0].image}'
 
+                echo ""
                 echo "========================================"
                 echo "Verification completed."
                 echo "========================================"
@@ -145,7 +147,7 @@ post {
         echo "PIPELINE COMPLETED SUCCESSFULLY"
         echo "========================================"
         echo "Docker Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-        echo "Kubernetes Deployment: devops-html-app"
+        echo "Kubernetes Deployment: html-app"
         echo "========================================"
     }
 
